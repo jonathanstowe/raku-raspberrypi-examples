@@ -1,0 +1,33 @@
+#!/usr/bin/env raku
+
+use RPi::Wiring::Pi;
+
+
+sub MAIN(Int $interval = 1 ) {
+    if wiringPiSetup() == -1 {
+
+        die "Couldn't initialize gpio";
+    }
+    else {
+
+        pinMode(0, OUTPUT);
+
+        my Bool $switch = False;
+
+        react {
+
+            whenever Supply.interval($interval) {
+                if $switch {
+                    digitalWrite(0, LOW);
+                }
+                else {
+                    digitalWrite(0, HIGH);
+                }
+                $switch = !$switch;
+            }
+
+        }
+    }
+}
+
+# vim: ft=perl6
