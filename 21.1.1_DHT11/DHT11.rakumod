@@ -7,11 +7,9 @@ class DHT11 {
     constant DHTLIB_ERROR_CHECKSUM   =  -1;
     constant DHTLIB_ERROR_TIMEOUT    =  -2;
     constant DHTLIB_INVALID_VALUE    =  -999;
-;
-    constant DHTLIB_DHT11_WAKEUP     =  20;
+    constant DHTLIB_DHT11_WAKEUP     =  18;
     constant DHTLIB_DHT_WAKEUP       =  1;
-;
-    constant DHTLIB_TIMEOUT          =  100;
+    constant DHTLIB_TIMEOUT          =  120;
 
     has uint8 @!bits = 0,0,0,0,0;
 
@@ -129,23 +127,39 @@ class DHT11 {
                 }
                 default {
                     $rv = $_;
-                    delay(100);
+                    #delay(100);
                 }
             }
         }
         $rv;
     }
+
+    class Reading {
+        has Numeric $.temperature;
+        has Numeric $.humidity;
+    }
+
+    method Supply( --> Supply ) {
+        supply {
+            whenever Supply.interval(1) -> $ {
+                for ^15 {
+                    if (self.read == DHTLIB_OK)  {
+                        last;
+                    }
+                    sleep(0.001);
+                }
+                emit Reading.new(temperature => $.temperature, humidity => $.humidity);
+            }
+        }
+    }
+
     sub MAIN() is export {
         my $dht = DHT11.new(pin => 0);
 
-        loop {
-            for ^15 {
-                if ($dht.read == DHTLIB_OK)  {
-                    last;
-                }
-                sleep(0.001);
+        react {
+            whenever $dht -> $reading {
+                say sprintf "Humidity is %.2f %%, \t Temperature is %.2f *C", $reading.humidity, $reading.temperature;
             }
-            say sprintf "Humidity is %.2f %%, \t Temperature is %.2f *C", $dht.humidity, $dht.temperature;
         }
     }
 }
