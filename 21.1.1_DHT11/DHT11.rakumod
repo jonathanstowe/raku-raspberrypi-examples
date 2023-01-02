@@ -1,5 +1,7 @@
 #!/usr/bin/env raku
 
+use v6.e.PREVIEW;
+
 class DHT11 {
     use RPi::Wiring::Pi;
 
@@ -7,9 +9,9 @@ class DHT11 {
     constant DHTLIB_ERROR_CHECKSUM   =  -1;
     constant DHTLIB_ERROR_TIMEOUT    =  -2;
     constant DHTLIB_INVALID_VALUE    =  -999;
-    constant DHTLIB_DHT11_WAKEUP     =  18;
+    constant DHTLIB_DHT11_WAKEUP     =  0.020;
     constant DHTLIB_DHT_WAKEUP       =  1;
-    constant DHTLIB_TIMEOUT          =  120;
+    constant DHTLIB_TIMEOUT          =  120000;
 
     has uint8 @!bits = 0,0,0,0,0;
 
@@ -24,61 +26,66 @@ class DHT11 {
         }
     }
 
-    method read-sensor(int $wakeup-delay ) {
+    method read-sensor(Numeric $wakeup-delay ) {
         my int $mask = 0x80;
         my int $idx = 0;
         my int $i ;
-        my Int $t;
+        my $t;
 
         @!bits = 0,0,0,0,0;
 
         pinMode($!pin,OUTPUT);
         digitalWrite($!pin,HIGH);
-        delay(500);
+        sleep(0.500);
         digitalWrite($!pin,LOW);
-        delay($wakeup-delay);
+        sleep($wakeup-delay);
         digitalWrite($!pin,HIGH);
         pinMode($!pin,INPUT);
 
-        $t = micros();
+        $t = nano;
 
         loop {
             if digitalRead($!pin) == LOW {
                 last;
             }
-            if ( micros() - $t ) > DHTLIB_TIMEOUT {
+            if ( nano - $t ) > DHTLIB_TIMEOUT {
+                note "timeout waiting for low";
                 return DHTLIB_ERROR_TIMEOUT;
             }
         }
 
-        $t = micros();
+        $t = nano;
         while digitalRead($!pin) == LOW {
-            if ( micros() - $t ) > DHTLIB_TIMEOUT {
+            if ( nano - $t ) > DHTLIB_TIMEOUT {
+                note "timeout waiting for another low";
                 return DHTLIB_ERROR_TIMEOUT;
             }
         }
-        $t = micros();
+        $t = nano;
         while digitalRead($!pin) == HIGH {
-            if ( micros() - $t ) > DHTLIB_TIMEOUT {
+            if ( nano - $t ) > DHTLIB_TIMEOUT {
+                note "timeout waiting for high";
                 return DHTLIB_ERROR_TIMEOUT;
             }
         }
 
         for ^40 -> $i {
-            $t = micros();
+            $t = nano;
             while digitalRead($!pin) == LOW {
-                if ( micros() - $t ) > DHTLIB_TIMEOUT {
+                if ( nano - $t ) > DHTLIB_TIMEOUT {
+                    note "timeout waiting for low reading bits";
                     return DHTLIB_ERROR_TIMEOUT;
                 }
             }
-            $t = micros();
+            $t = nano;
             while digitalRead($!pin) == HIGH {
-                if ( micros() - $t ) > DHTLIB_TIMEOUT {
+                if ( nano - $t ) > DHTLIB_TIMEOUT {
+                    note "timeout waiting for high reading bits";
                     return DHTLIB_ERROR_TIMEOUT;
                 }
             }
 
-            if ( micros() - $t ) > 60 {
+            if ( nano - $t ) > 5000 {
                 @!bits[$idx] +|= $mask;
             }
 
@@ -127,7 +134,7 @@ class DHT11 {
                 }
                 default {
                     $rv = $_;
-                    #delay(100);
+                    sleep(0.1);
                 }
             }
         }
