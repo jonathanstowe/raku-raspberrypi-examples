@@ -10,7 +10,7 @@
 #define DHTLIB_ERROR_TIMEOUT    -2
 #define DHTLIB_INVALID_VALUE    -999
 
-#define DHTLIB_DHT11_WAKEUP     20
+#define DHTLIB_DHT11_WAKEUP     18
 #define DHTLIB_DHT_WAKEUP       1
 
 #define DHTLIB_TIMEOUT          100

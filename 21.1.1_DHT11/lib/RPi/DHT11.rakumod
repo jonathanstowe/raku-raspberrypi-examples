@@ -1,7 +1,6 @@
 #!/usr/bin/env raku
 
 class RPi::DHT11 {
-    use RPi::Wiring::Pi;
 
     use NativeCall;
 
@@ -11,7 +10,7 @@ class RPi::DHT11 {
     constant DHTLIB_ERROR_CHECKSUM   =  -1;
     constant DHTLIB_ERROR_TIMEOUT    =  -2;
     constant DHTLIB_INVALID_VALUE    =  -999;
-    constant DHTLIB_DHT11_WAKEUP     =  18;
+    constant DHTLIB_DHT11_WAKEUP     =  20;
     constant DHTLIB_DHT_WAKEUP       =  1;
     constant DHTLIB_TIMEOUT          =  120;
 
@@ -30,8 +29,13 @@ class RPi::DHT11 {
     }
 
     class Data is repr('CStruct') {
-        has uint8 @.bits[5] is CArray;
+        HAS uint8 @.bits[5] is CArray;
 
+        method TWEAK() {
+            for ^5 -> $i {
+                @!bits[$i] = 0;
+            }
+        }
         sub read_sensor(Data $data is rw, uint32 $pin, uint32 $wakeup-delay --> int32 ) is native(LIB) { * }
 
         method read-sensor(uint32 $pin, uint32 $wakeup-delay --> int32) {
@@ -89,12 +93,12 @@ class RPi::DHT11 {
 
     method Supply( --> Supply ) {
         supply {
-            whenever Supply.interval(1) -> $ {
+            whenever Supply.interval(1.5) -> $ {
                 for ^15 {
                     if (self.read == DHTLIB_OK)  {
                         last;
                     }
-                    sleep(0.001);
+                    sleep(0.01);
                 }
                 emit Reading.new(temperature => $.temperature, humidity => $.humidity);
             }
