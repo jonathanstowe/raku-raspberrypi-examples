@@ -7,7 +7,7 @@ sub MAIN() {
 
     react {
         whenever $dht -> $reading {
-            say sprintf "Humidity is %.2f %%, \t Temperature is %.2f *C", $reading.humidity, $reading.temperature;
+            say sprintf "{ DateTime.now.Str }: Humidity is %.2f %%, \t Temperature is %.2f *C", $reading.humidity, $reading.temperature;
         }
     }
 }
